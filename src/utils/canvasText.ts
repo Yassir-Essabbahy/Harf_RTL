@@ -20,6 +20,13 @@ export interface PixelTextOptions {
   direction: 'rtl' | 'ltr'
   color: string
   showGrid?: boolean
+  outline?: number
+  outlineColor?: string
+  shadow?: boolean
+  shadowColor?: string
+  bgColor?: string
+  width?: number
+  height?: number
 }
 
 /* Rasterize text small on an offscreen canvas, then upscale it with
@@ -36,26 +43,53 @@ export function drawPixelText(canvas: HTMLCanvasElement, o: PixelTextOptions): v
   for (const line of lines) maxW = Math.max(maxW, octx.measureText(line).width)
   const lineH = Math.max(1, Math.round(o.fontSize * o.lineHeight))
 
-  off.width = Math.ceil(maxW) + pad * 2
-  off.height = lineH * lines.length + pad
+  // Determine logical canvas size
+  off.width = o.width || Math.ceil(maxW) + pad * 2
+  off.height = o.height || lineH * lines.length + pad
   octx = off.getContext('2d')!
+  
+  // Fill background if specified
+  if (o.bgColor && o.bgColor !== 'transparent') {
+    octx.fillStyle = o.bgColor
+    octx.fillRect(0, 0, off.width, off.height)
+  }
+
   octx.font = font
-  octx.fillStyle = o.color
   octx.textBaseline = 'middle'
   octx.direction = o.direction
   if (o.align === 'center') octx.textAlign = 'center'
   else if (o.align === 'start') octx.textAlign = o.direction === 'rtl' ? 'right' : 'left'
   else octx.textAlign = o.direction === 'rtl' ? 'left' : 'right'
 
+  const totalTextHeight = lineH * lines.length
+  const startY = o.height ? (o.height - totalTextHeight) / 2 : pad
+
   lines.forEach((line, i) => {
     if (!line.trim()) return
-    const y = pad + lineH * i + lineH / 2
+    const y = startY + lineH * i + lineH / 2
     const x =
       octx.textAlign === 'center'
         ? off.width / 2
         : octx.textAlign === 'right'
-          ? off.width - pad / 2
-          : pad / 2
+          ? off.width - (o.width ? 10 : pad / 2) // add some padding from the edge
+          : (o.width ? 10 : pad / 2)
+    
+    // Shadow
+    if (o.shadow) {
+      octx.fillStyle = o.shadowColor || 'rgba(0,0,0,0.5)'
+      octx.fillText(line, x + 1, y + 1)
+    }
+
+    // Outline (using strokeText)
+    if (o.outline && o.outline > 0) {
+      octx.strokeStyle = o.outlineColor || '#000000'
+      octx.lineWidth = o.outline * 2 // line width is centered, so we double it
+      octx.lineJoin = 'round'
+      octx.strokeText(line, x, y)
+    }
+
+    // Main text
+    octx.fillStyle = o.color
     octx.fillText(line, x, y)
   })
 

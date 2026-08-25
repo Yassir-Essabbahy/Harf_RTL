@@ -3,6 +3,7 @@ import type { FontDef } from './data/fonts'
 import { FONTS } from './data/fonts'
 import { TextLab } from './components/TextLab'
 import { FontLab } from './components/FontLab'
+import { PixelPreview } from './components/PixelPreview'
 import { Logo } from './components/Logo'
 import { Segmented } from './components/ui'
 
@@ -25,7 +26,7 @@ export function useFonts(): FontContextValue {
 type Theme = 'dark' | 'light'
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'text' | 'font'>('font')
+  const [activeTab, setActiveTab] = useState<'text' | 'font' | 'pixel'>('pixel')
   const [theme, setTheme] = useState<Theme>(() =>
     localStorage.getItem('rf-theme') === 'dark' ? 'dark' : 'light',
   )
@@ -76,19 +77,20 @@ export default function App() {
       <div className="min-h-screen flex flex-col">
         <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 py-8 sm:py-12">
           
-          <div className="mb-6 w-full md:w-[350px]">
+          <div className="mb-6 w-full md:w-[450px]">
             <Segmented
               value={activeTab}
               onChange={setActiveTab}
               options={[
                 { value: 'text', label: 'RTL Text Lab' },
                 { value: 'font', label: 'Font Lab' },
+                { value: 'pixel', label: 'Pixel Preview' },
               ]}
             />
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
-            {activeTab === 'text' ? <TextLab /> : <FontLab />}
+            {activeTab === 'text' ? <TextLab /> : activeTab === 'font' ? <FontLab /> : <PixelPreview />}
 
             <aside className="panel h-fit lg:sticky lg:top-8">
               <div className="win-title">
@@ -131,12 +133,20 @@ export default function App() {
                     </div>
                     <p className="text-xs text-muted">Arabic tools for game developers.</p>
                   </>
-                ) : (
+                ) : activeTab === 'font' ? (
                   <div>
                     <p className="font-bold text-base mb-1">Font Lab</p>
                     <p className="font-semibold text-sm">Test your font before it reaches your game.</p>
                     <p className="mt-2 text-sm text-muted">
                       Your font stays local in the browser.
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="font-bold text-base mb-1">Pixel Preview</p>
+                    <p className="font-semibold text-sm">See how your text renders in a retro game.</p>
+                    <p className="mt-2 text-sm text-muted">
+                      Uses nearest-neighbor scaling for crisp pixels.
                     </p>
                   </div>
                 )}
