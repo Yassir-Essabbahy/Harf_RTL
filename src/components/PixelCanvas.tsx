@@ -1,0 +1,51 @@
+import { useEffect, useRef } from 'react'
+import { drawPixelText, ensureFontsLoaded } from '../utils/canvasText'
+
+interface PixelCanvasProps {
+  text: string
+  family: string
+  weight: number
+  small: number
+  scale: number
+  lineH: number
+  align: 'start' | 'center' | 'end'
+  dir: 'rtl' | 'ltr'
+  color: string
+  grid?: boolean
+  className?: string
+}
+
+export function PixelCanvas(p: PixelCanvasProps) {
+  const ref = useRef<HTMLCanvasElement>(null)
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      await ensureFontsLoaded([`${p.weight} 16px "${p.family}"`])
+      if (!cancelled && ref.current) {
+        drawPixelText(ref.current, {
+          text: p.text,
+          family: p.family,
+          weight: p.weight,
+          fontSize: p.small,
+          scale: p.scale,
+          lineHeight: p.lineH,
+          align: p.align,
+          direction: p.dir,
+          color: p.color,
+          showGrid: p.grid,
+        })
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [p.text, p.family, p.weight, p.small, p.scale, p.lineH, p.align, p.dir, p.color, p.grid])
+
+  return (
+    <canvas
+      ref={ref}
+      className={p.className}
+      style={{ imageRendering: 'pixelated', maxWidth: '100%', height: 'auto', display: 'block' }}
+    />
+  )
+}
