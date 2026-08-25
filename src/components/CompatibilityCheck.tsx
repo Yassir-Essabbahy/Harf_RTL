@@ -28,16 +28,14 @@ export function CompatibilityCheck({
   const passing = checks.filter((c) => c.status === 'pass').length
 
   return (
-    <div className="panel p-5">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-bold flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-[var(--accent-2)]" />
-          RTL Compatibility Check
-        </h3>
-        <span className="mono text-xs text-muted">
+    <div className="panel">
+      <div className="win-title">
+        RTL Compatibility Check
+        <span className="ml-auto mono text-xs opacity-80">
           {passing}/{checks.length} passing
         </span>
       </div>
+      <div className="p-5">
       <ul className="flex flex-col gap-2">
         {checks.map((c) => (
           <li key={c.id} className="flex items-start gap-3 rounded-lg px-3 py-2 surface">
@@ -52,6 +50,7 @@ export function CompatibilityCheck({
         ))}
       </ul>
       <p className="mt-3 text-xs text-muted">Heuristic client-side checks — string analysis only, nothing leaves the browser.</p>
+      </div>
     </div>
   )
 }
