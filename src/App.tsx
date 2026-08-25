@@ -2,7 +2,9 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import type { FontDef } from './data/fonts'
 import { FONTS } from './data/fonts'
 import { TextLab } from './components/TextLab'
+import { FontLab } from './components/FontLab'
 import { Logo } from './components/Logo'
+import { Segmented } from './components/ui'
 
 interface FontContextValue {
   fonts: FontDef[]
@@ -23,6 +25,7 @@ export function useFonts(): FontContextValue {
 type Theme = 'dark' | 'light'
 
 export default function App() {
+  const [activeTab, setActiveTab] = useState<'text' | 'font'>('font')
   const [theme, setTheme] = useState<Theme>(() =>
     localStorage.getItem('rf-theme') === 'dark' ? 'dark' : 'light',
   )
@@ -57,7 +60,9 @@ export default function App() {
 
   const clearUploadedFont = () => {
     if (userFont) {
-      document.fonts.delete(document.fonts.find((f) => f.family === userFont.family)!)
+      const fonts = Array.from(document.fonts as unknown as Iterable<FontFace>)
+      const toDelete = fonts.find((f) => f.family === userFont.family)
+      if (toDelete) document.fonts.delete(toDelete)
     }
     setUserFont(null)
     setFontId('cairo')
@@ -70,13 +75,25 @@ export default function App() {
     <FontContext.Provider value={{ fonts, active, setFontId, uploadFont, clearUploadedFont }}>
       <div className="min-h-screen flex flex-col">
         <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 py-8 sm:py-12">
+          
+          <div className="mb-6 w-full md:w-[350px]">
+            <Segmented
+              value={activeTab}
+              onChange={setActiveTab}
+              options={[
+                { value: 'text', label: 'RTL Text Lab' },
+                { value: 'font', label: 'Font Lab' },
+              ]}
+            />
+          </div>
+
           <div className="grid gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
-            <TextLab />
+            {activeTab === 'text' ? <TextLab /> : <FontLab />}
 
             <aside className="panel h-fit lg:sticky lg:top-8">
               <div className="win-title">
                 <Logo size={14} />
-                Harf RTL
+                RTL Forge
                 <button
                   type="button"
                   className="win-btn"
@@ -88,25 +105,41 @@ export default function App() {
               </div>
 
               <div className="p-4 flex flex-col gap-4">
-                <p className="text-sm leading-relaxed">
-                  Type Arabic and watch it render live. Test mixed scripts, numbers,
-                  diacritics and multi-line strings — change the text color and preview
-                  it instantly, exactly like it will ship.
-                </p>
-
-                <div className="grid gap-2 pt-1" style={{ borderTop: '1px solid var(--silver-lo)' }}>
-                  {[
-                    'Live RTL / LTR rendering with real Arabic webfonts',
-                    'Text color picker with instant preview feedback',
-                    'Pixel preview: rasterize, upscale and inspect the grid',
-                    'Automatic compatibility checks for common RTL pitfalls',
-                  ].map((line) => (
-                    <div key={line} className="flex items-start gap-2.5 text-sm">
-                      <span className="mono text-ok shrink-0" aria-hidden="true">✓</span>
-                      {line}
+                {activeTab === 'text' ? (
+                  <>
+                    <div>
+                      <p className="font-bold">Test Arabic text before it reaches your game.</p>
+                      <p className="mt-2 text-sm leading-relaxed">
+                        Preview RTL direction, Arabic shaping, mixed scripts, diacritics and
+                        pixel rendering — all in one place.
+                      </p>
                     </div>
-                  ))}
-                </div>
+
+                    <div className="grid gap-2 pt-1" style={{ borderTop: '1px solid var(--silver-lo)' }}>
+                      {[
+                        'RTL direction and alignment',
+                        'Arabic character shaping',
+                        'Mixed Arabic / Latin text',
+                        'Diacritics and punctuation',
+                        'Pixel rendering preview',
+                      ].map((line) => (
+                        <div key={line} className="flex items-start gap-2.5 text-sm">
+                          <span className="mono text-ok shrink-0" aria-hidden="true">✓</span>
+                          {line}
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted">Arabic tools for game developers.</p>
+                  </>
+                ) : (
+                  <div>
+                    <p className="font-bold text-base mb-1">Font Lab</p>
+                    <p className="font-semibold text-sm">Test your font before it reaches your game.</p>
+                    <p className="mt-2 text-sm text-muted">
+                      Your font stays local in the browser.
+                    </p>
+                  </div>
+                )}
               </div>
             </aside>
           </div>

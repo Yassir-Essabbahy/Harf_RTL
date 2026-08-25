@@ -18,13 +18,11 @@ const ICON_CLASS: Record<CheckStatus, string> = {
 export function CompatibilityCheck({
   text,
   direction,
-  letterSpacing,
 }: {
   text: string
   direction: 'rtl' | 'ltr'
-  letterSpacing: number
 }) {
-  const checks = useMemo(() => analyzeText(text, direction, letterSpacing), [text, direction, letterSpacing])
+  const checks = useMemo(() => analyzeText(text, direction), [text, direction])
   const passing = checks.filter((c) => c.status === 'pass').length
 
   return (
@@ -32,7 +30,7 @@ export function CompatibilityCheck({
       <div className="win-title">
         RTL Compatibility Check
         <span className="ml-auto mono text-xs opacity-80">
-          {passing}/{checks.length} passing
+          — {passing}/{checks.length}
         </span>
       </div>
       <div className="p-5">

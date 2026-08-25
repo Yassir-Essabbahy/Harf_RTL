@@ -36,6 +36,7 @@ export function TextLab() {
   const [color, setColor] = useState('#17140f')
   const [pixel, setPixel] = useState(false)
   const [grid, setGrid] = useState(true)
+  const [copied, setCopied] = useState(false)
 
   const onFontChange = (id: string) => {
     setFontId(id)
@@ -67,6 +68,26 @@ export function TextLab() {
     ? (active as typeof active & { bytes: ArrayBuffer; fileName: string })
     : null
 
+  const resolvedAlign = align === 'center' ? 'center' : dir === 'rtl' ? (align === 'start' ? 'right' : 'left') : align === 'start' ? 'left' : 'right'
+  const cssLines = [
+    'direction: ' + dir + ';',
+    'text-align: ' + resolvedAlign + ';',
+    `font-family: ${active.stack};`,
+    `font-size: ${size}px;`,
+    `font-weight: ${weight};`,
+    `line-height: ${lineH.toFixed(1)};`,
+  ]
+  if (spacing > 0) cssLines.push(`letter-spacing: ${spacing}px;`)
+  cssLines.push(`color: ${color};`)
+  const cssBlock = cssLines.join('\n')
+
+  const copyCss = () => {
+    void navigator.clipboard.writeText(cssBlock).then(() => {
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1500)
+    })
+  }
+
   const onUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) void uploadFont(file)
@@ -83,9 +104,9 @@ export function TextLab() {
   }
 
   const downloadReport = () => {
-    const checks = analyzeText(text, dir, spacing)
+    const checks = analyzeText(text, dir)
     const lines = [
-      'Harf RTL — RTL fix report',
+      'RTL Forge — RTL report',
       `Font: ${active.name}`,
       `Preview: ${size}px · weight ${weight} · dir=${dir} · align=${align} · line-height ${lineH.toFixed(1)}`,
       '',
@@ -103,7 +124,7 @@ export function TextLab() {
       <div className="grid gap-5 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
         <div className="panel flex flex-col">
           <div className="win-title">
-            Input
+            Arabic Text
             <span className="ml-auto mono text-xs opacity-80">
               {charCount} chars · {words} words
             </span>
@@ -250,7 +271,7 @@ export function TextLab() {
         <div className="flex flex-col gap-5">
           <div className="panel">
             <div className="win-title">
-              Live preview
+              Preview
               <span className={`chip mono ml-auto ${pixel ? 'chip-acc' : ''}`}>{pixel ? 'PIXEL' : 'DOM'}</span>
             </div>
             <div className="p-5">
@@ -293,10 +314,20 @@ export function TextLab() {
                 ? `pixel render · ${smallSize}px raster upscaled ×${PIXEL_SCALE} · smoothing off`
                 : `${active.name} · ${size}px · weight ${weight} · dir=${dir}`}
             </p>
+
+            <div className="mt-3 surface p-3">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-semibold uppercase tracking-wide">Rendering</span>
+                <button type="button" className="btn btn-ghost btn-mini" onClick={copyCss}>
+                  {copied ? '✓ Copied' : 'Copy CSS'}
+                </button>
+              </div>
+              <pre className="mono text-xs whitespace-pre-wrap text-muted m-0">{cssBlock}</pre>
+            </div>
             </div>
           </div>
 
-          <CompatibilityCheck text={text} direction={dir} letterSpacing={spacing} />
+          <CompatibilityCheck text={text} direction={dir} />
         </div>
       </div>
     </section>
