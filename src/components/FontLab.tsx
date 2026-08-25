@@ -1,5 +1,5 @@
 import { useRef, useState, type ChangeEvent } from 'react'
-import { useFonts } from '../App'
+import { useApp } from '../context/AppContext'
 import { Control } from './ui'
 import { analyzeText } from '../utils/rtlCheck'
 
@@ -33,7 +33,7 @@ const LABELS_MAP: Record<string, { title: string; desc: string }> = {
 }
 
 export function FontLab() {
-  const { fonts, active, setFontId, uploadFont } = useFonts()
+  const { fonts, active, setFontId, uploadFont } = useApp()
   const fileRef = useRef<HTMLInputElement>(null)
   
   const [text, setText] = useState(DEFAULT_PREVIEW)

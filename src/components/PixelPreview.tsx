@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { useFonts } from '../App'
+import { useApp } from '../context/AppContext'
 import { Control, Toggle, Segmented } from './ui'
 import { PixelCanvas } from './PixelCanvas'
 
@@ -21,7 +21,7 @@ const RESOLUTIONS = [
 ]
 
 export function PixelPreview() {
-  const { fonts, active, setFontId } = useFonts()
+  const { fonts, active, setFontId } = useApp()
   
   const [text, setText] = useState(PRESETS[0].text)
   const [resIndex, setResIndex] = useState(0)

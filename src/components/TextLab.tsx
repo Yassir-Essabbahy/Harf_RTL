@@ -1,5 +1,5 @@
 import { useRef, useState, type ChangeEvent } from 'react'
-import { useFonts } from '../App'
+import { useApp } from '../context/AppContext'
 import { DEFAULT_TEXT, PRESETS, type TextPreset } from '../data/presets'
 import { PixelCanvas } from './PixelCanvas'
 import { CompatibilityCheck } from './CompatibilityCheck'
@@ -23,7 +23,7 @@ const COLOR_SWATCHES = ['#17140f', '#eef8f3', '#b3382c', '#1f6f54', '#1d4ed8', '
 const PIXEL_SCALE = 3
 
 export function TextLab() {
-  const { fonts, active, setFontId, uploadFont, clearUploadedFont } = useFonts()
+  const { fonts, active, setFontId, uploadFont, clearUploadedFont } = useApp()
   const fileRef = useRef<HTMLInputElement>(null)
   const [text, setText] = useState(DEFAULT_TEXT)
   const [size, setSize] = useState(34)
@@ -122,208 +122,211 @@ export function TextLab() {
   return (
     <section id="text-lab" className="w-full">
       <div className="grid gap-5 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-        <div className="panel flex flex-col">
-          <div className="win-title">
-            Arabic Text
-            <span className="ml-auto mono text-xs opacity-80">
-              {charCount} chars · {words} words
-            </span>
-          </div>
-          <div className="p-5 flex flex-col gap-4">
-
-          <textarea
-            className="textarea font-arabic"
-            dir={dir}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            rows={7}
-            spellCheck={false}
-          />
-
-          <div>
-            <div className="text-xs font-semibold text-muted uppercase tracking-wide mb-2">Example presets</div>
-            <div className="flex flex-wrap gap-2">
-              {PRESETS.map((p) => (
-                <button key={p.id} className="chip chip-btn" onClick={() => applyPreset(p)}>
-                  {p.label}
-                </button>
-              ))}
+        <div className="flex flex-col gap-5">
+          <div className="panel flex flex-col">
+            <div className="win-title">
+              Arabic Text
+              <span className="ml-auto mono text-xs opacity-80">
+                {charCount} chars · {words} words
+              </span>
             </div>
-          </div>
+            <div className="p-5 flex flex-col gap-4">
 
-          <div className="grid grid-cols-2 gap-x-3 gap-y-4 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
-            <div className="col-span-2">
-              <Control label="Font">
-                <div className="flex gap-2">
-                  <select className="select" value={active.id} onChange={(e) => onFontChange(e.target.value)}>
-                    {fonts.map((f) => (
-                      <option key={f.id} value={f.id}>
-                        {f.name}
-                        {f.pixel ? ' (pixel prototype)' : f.id === 'uploaded' ? ' (uploaded)' : ''}
-                      </option>
-                    ))}
-                  </select>
-                  <button type="button" className="btn btn-ghost whitespace-nowrap" onClick={() => fileRef.current?.click()}>
-                    ⤒ Upload font
+            <textarea
+              className="textarea font-arabic"
+              dir={dir}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              rows={7}
+              spellCheck={false}
+            />
+
+            <div>
+              <div className="text-xs font-semibold text-muted uppercase tracking-wide mb-2">Example presets</div>
+              <div className="flex flex-wrap gap-2">
+                {PRESETS.map((p) => (
+                  <button key={p.id} className="chip chip-btn" onClick={() => applyPreset(p)}>
+                    {p.label}
                   </button>
-                  <input
-                    ref={fileRef}
-                    type="file"
-                    accept=".ttf,.otf,.woff,.woff2"
-                    className="hidden"
-                    onChange={onUpload}
-                  />
-                </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-3 gap-y-4 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
+              <div className="col-span-2">
+                <Control label="Font">
+                  <div className="flex gap-2">
+                    <select className="select" value={active.id} onChange={(e) => onFontChange(e.target.value)}>
+                      {fonts.map((f) => (
+                        <option key={f.id} value={f.id}>
+                          {f.name}
+                          {f.pixel ? ' (pixel prototype)' : f.id === 'uploaded' ? ' (uploaded)' : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <button type="button" className="btn btn-ghost whitespace-nowrap" onClick={() => fileRef.current?.click()}>
+                      ⤒ Upload font
+                    </button>
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      accept=".ttf,.otf,.woff,.woff2"
+                      className="hidden"
+                      onChange={onUpload}
+                    />
+                  </div>
+                </Control>
+                {uploaded && (
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <button type="button" className="btn btn-primary" onClick={downloadRtlFont}>
+                      ↓ Download RTL-fixed font
+                    </button>
+                    <button type="button" className="btn btn-ghost" onClick={downloadReport}>
+                      RTL report
+                    </button>
+                    <button type="button" className="btn btn-ghost" onClick={clearUploadedFont}>
+                      Remove
+                    </button>
+                  </div>
+                )}
+              </div>
+              <Control label="Size" value={`${size}px`}>
+                <input type="range" min={12} max={96} step={1} value={size} onChange={(e) => setSize(+e.target.value)} className="range" />
               </Control>
-              {uploaded && (
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <button type="button" className="btn btn-primary" onClick={downloadRtlFont}>
-                    ↓ Download RTL-fixed font
-                  </button>
-                  <button type="button" className="btn btn-ghost" onClick={downloadReport}>
-                    RTL report
-                  </button>
-                  <button type="button" className="btn btn-ghost" onClick={clearUploadedFont}>
-                    Remove
-                  </button>
+              <Control label="Weight" value={weight}>
+                <select className="select" value={weight} onChange={(e) => setWeight(+e.target.value)}>
+                  {active.weights.map((w) => (
+                    <option key={w} value={w}>{w}</option>
+                  ))}
+                </select>
+              </Control>
+              {active.id === 'uploaded' && (
+                <div className="text-xs text-ok mt-1 font-semibold text-center col-span-2">
+                  Local font active. It stays in your browser.
                 </div>
               )}
             </div>
-            <Control label="Size" value={`${size}px`}>
-              <input type="range" min={12} max={96} step={1} value={size} onChange={(e) => setSize(+e.target.value)} className="range" />
-            </Control>
-            <Control label="Weight" value={weight}>
-              <select className="select" value={weight} onChange={(e) => setWeight(+e.target.value)}>
-                {active.weights.map((w) => (
-                  <option key={w} value={w}>
-                    {w}
-                  </option>
-                ))}
-              </select>
-            </Control>
-            <Control label="Letter spacing" value={`${spacing}px`}>
-              <input type="range" min={0} max={8} step={0.5} value={spacing} onChange={(e) => setSpacing(+e.target.value)} className="range" />
-            </Control>
-            <Control label="Line height" value={lineH.toFixed(1)}>
-              <input type="range" min={1} max={3} step={0.1} value={lineH} onChange={(e) => setLineH(+e.target.value)} className="range" />
-            </Control>
-            <Control label="Alignment">
+            </div>
+          </div>
+
+          <div className="panel flex flex-col">
+            <div className="win-title">Settings</div>
+            <div className="p-4 flex flex-col gap-4">
+              <Control label="Size" value={`${size}px`}>
+                <input type="range" min={8} max={128} step={1} value={size} onChange={(e) => setSize(+e.target.value)} className="range w-full" />
+              </Control>
+              <Control label="Weight" value={weight}>
+                <input type="range" min={100} max={900} step={100} value={weight} onChange={(e) => setWeight(+e.target.value)} className="range w-full" />
+              </Control>
+              <Control label="Letter Spacing" value={`${spacing}em`}>
+                <input type="range" min={-0.1} max={0.5} step={0.01} value={spacing} onChange={(e) => setSpacing(+e.target.value)} className="range w-full" />
+              </Control>
+              <Control label="Line Height" value={lineH}>
+                <input type="range" min={0.5} max={3} step={0.1} value={lineH} onChange={(e) => setLineH(+e.target.value)} className="range w-full" />
+              </Control>
+            </div>
+          </div>
+
+          <div className="panel flex flex-col">
+            <div className="win-title">Format</div>
+            <div className="p-4 flex flex-col gap-4">
               <Segmented
                 value={align}
-                onChange={setAlign}
+                onChange={(v) => setAlign(v as Align)}
                 options={[
                   { value: 'start', label: 'Start' },
                   { value: 'center', label: 'Center' },
                   { value: 'end', label: 'End' },
                 ]}
               />
-            </Control>
-            <Control label="Direction">
               <Segmented
                 value={dir}
-                onChange={setDir}
+                onChange={(v) => setDir(v as Dir)}
                 options={[
                   { value: 'rtl', label: 'RTL' },
                   { value: 'ltr', label: 'LTR' },
                 ]}
               />
-            </Control>
-            <Control label="Background">
-              <select className="select" value={bg} onChange={(e) => setBg(e.target.value as Bg)}>
-                <option value="light">Light</option>
-                <option value="checker">Checker</option>
-                <option value="paper">Paper</option>
-                <option value="game">Game</option>
-              </select>
-            </Control>
-            <Control label="Text color" value={color.toUpperCase()}>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={color}
-                  onChange={(e) => setColor(e.target.value)}
-                  className="color-input"
-                  aria-label="Pick text color"
-                />
-                <div className="flex flex-wrap gap-1.5">
-                  {COLOR_SWATCHES.map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      title={c}
-                      aria-label={`Set text color ${c}`}
-                      className={`swatch ${c === color.toLowerCase() ? 'swatch-active' : ''}`}
-                      style={{ background: c }}
-                      onClick={() => setColor(c)}
-                    />
-                  ))}
-                </div>
-              </div>
-            </Control>
-            <div className="flex flex-col justify-center gap-2.5">
-              <Toggle checked={pixel} onChange={setPixel} label="Pixel preview" />
-              {pixel && <Toggle checked={grid} onChange={setGrid} label="Pixel grid" />}
             </div>
           </div>
-          </div>
+
         </div>
 
         <div className="flex flex-col gap-5">
-          <div className="panel">
-            <div className="win-title">
+          <div className="panel flex flex-col flex-1">
+            <div className="win-title flex justify-between items-center">
               Preview
-              <span className={`chip mono ml-auto ${pixel ? 'chip-acc' : ''}`}>{pixel ? 'PIXEL' : 'DOM'}</span>
-            </div>
-            <div className="p-5">
-
-            <div className={`preview-surface ${BG_CLASS[bg]}`} style={{ color }}>
-              {pixel ? (
-                <PixelCanvas
-                  text={text}
-                  family={active.family}
-                  weight={weight}
-                  small={smallSize}
-                  scale={PIXEL_SCALE}
-                  lineH={lineH}
-                  align={align}
-                  dir={dir}
-                  color={pixelColor}
-                  grid={grid}
-                />
-              ) : (
-                <div
-                  dir={dir}
-                  className="max-w-full"
-                  style={{
-                    fontFamily: active.stack,
-                    fontSize: size,
-                    fontWeight: weight,
-                    letterSpacing: spacing ? `${spacing}px` : undefined,
-                    lineHeight: lineH,
-                    textAlign: align,
-                    whiteSpace: 'pre-wrap',
-                  }}
-                >
-                  {text}
+              <div className="flex items-center gap-4">
+                <span className={`chip mono ${pixel ? 'chip-acc' : ''}`}>{pixel ? 'PIXEL' : 'DOM'}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted">Canvas BG</span>
+                  <div className="flex gap-1" role="group" aria-label="Background color">
+                    {['light', 'dark', 'black', 'grid'].map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        aria-label={`Set background ${c}`}
+                        className={`swatch ${c === bg ? 'swatch-active' : ''}`}
+                        style={{
+                          background: c === 'light' ? '#fff' : c === 'dark' ? '#1e1e1e' : c === 'black' ? '#000' : 'url(/grid.png)',
+                        }}
+                        onClick={() => setBg(c as Bg)}
+                      />
+                    ))}
+                  </div>
                 </div>
-              )}
-            </div>
-
-            <p className="mt-3 mono text-xs text-muted">
-              {pixel
-                ? `pixel render · ${smallSize}px raster upscaled ×${PIXEL_SCALE} · smoothing off`
-                : `${active.name} · ${size}px · weight ${weight} · dir=${dir}`}
-            </p>
-
-            <div className="mt-3 surface p-3">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs font-semibold uppercase tracking-wide">Rendering</span>
-                <button type="button" className="btn btn-ghost btn-mini" onClick={copyCss}>
-                  {copied ? '✓ Copied' : 'Copy CSS'}
-                </button>
               </div>
-              <pre className="mono text-xs whitespace-pre-wrap text-muted m-0">{cssBlock}</pre>
             </div>
+            
+            <div className="p-5 flex flex-col flex-1">
+              <div className={`preview-surface ${BG_CLASS[bg]} flex-1`} style={{ color }}>
+                {pixel ? (
+                  <PixelCanvas
+                    text={text}
+                    family={active.family}
+                    weight={weight}
+                    small={smallSize}
+                    scale={PIXEL_SCALE}
+                    lineH={lineH}
+                    align={align}
+                    dir={dir}
+                    color={pixelColor}
+                    grid={grid}
+                  />
+                ) : (
+                  <div
+                    dir={dir}
+                    className="max-w-full"
+                    style={{
+                      fontFamily: active.stack,
+                      fontSize: size,
+                      fontWeight: weight,
+                      letterSpacing: spacing ? `${spacing}px` : undefined,
+                      lineHeight: lineH,
+                      textAlign: align,
+                      whiteSpace: 'pre-wrap',
+                    }}
+                  >
+                    {text}
+                  </div>
+                )}
+              </div>
+
+              <p className="mt-3 mono text-xs text-muted">
+                {pixel
+                  ? `pixel render · ${smallSize}px raster upscaled ×${PIXEL_SCALE} · smoothing off`
+                  : `${active.name} · ${size}px · weight ${weight} · dir=${dir}`}
+              </p>
+
+              <div className="mt-3 surface p-3">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-semibold uppercase tracking-wide">Rendering</span>
+                  <button type="button" className="btn btn-ghost btn-mini" onClick={copyCss}>
+                    {copied ? '✓ Copied' : 'Copy CSS'}
+                  </button>
+                </div>
+                <pre className="mono text-xs whitespace-pre-wrap text-muted m-0">{cssBlock}</pre>
+              </div>
             </div>
           </div>
 
