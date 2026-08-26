@@ -84,7 +84,7 @@ export default function App() {
               <aside className="panel h-fit lg:sticky lg:top-6">
                 <div className="win-title">
                   <Logo size={14} />
-                  Haraf Forge
+                  Harf Forge
                   <button
                     type="button"
                     className="win-btn"
@@ -174,7 +174,7 @@ export default function App() {
           </div>
 
           <footer className="mt-8 pt-4 flex flex-wrap items-center justify-between gap-2 mono text-xs" style={{ borderTop: '1px solid var(--silver-lo)' }}>
-            <span>Haraf Forge v0.1 — test Arabic before it reaches your game.</span>
+            <span>Harf Forge v0.1 — test Arabic before it reaches your game.</span>
             <span className="text-muted">100% local · fonts never leave your browser.</span>
           </footer>
         </main>
