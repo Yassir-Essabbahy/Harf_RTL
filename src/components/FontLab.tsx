@@ -1,6 +1,6 @@
-import { useRef, useState, type ChangeEvent } from 'react'
+import { useRef, useState, type ChangeEvent, type DragEvent } from 'react'
 import { useApp } from '../context/AppContext'
-import { Control } from './ui'
+import { Control, CopyButton } from './ui'
 import { analyzeText } from '../utils/rtlCheck'
 
 const TEST_CASES = [
@@ -25,29 +25,35 @@ const DEFAULT_PREVIEW = `مَرْحَبًا بِكُمْ
 Level 01 — المرحلة الأولى`
 
 const LABELS_MAP: Record<string, { title: string; desc: string }> = {
-  arabic: { title: 'Arabic rendering', desc: 'Arabic text rendered' },
-  direction: { title: 'RTL preview', desc: 'RTL direction enabled' },
+  arabic: { title: 'Arabic rendering', desc: 'Arabic text rendered by the browser' },
+  direction: { title: 'RTL preview', desc: 'RTL direction enabled in this preview' },
   shaping: { title: 'Arabic shaping', desc: 'Connected Arabic forms displayed' },
-  mixing: { title: 'Script mixing', desc: 'Arabic + Latin text rendered' },
-  diacritics: { title: 'Diacritics', desc: 'Diacritics rendered' },
+  mixing: { title: 'Script mixing', desc: 'Mixed-script input detected in preview' },
+  diacritics: { title: 'Diacritics', desc: 'Tashkeel marks rendered' },
 }
 
 export function FontLab() {
-  const { fonts, active, setFontId, uploadFont } = useApp()
+  const {
+    fonts, active, setFontId, uploadFont, clearUploadedFont,
+    uploaded, fontStatus, fontError,
+    fontSize,
+  } = useApp()
   const fileRef = useRef<HTMLInputElement>(null)
-  
   const [text, setText] = useState(DEFAULT_PREVIEW)
   const [size, setSize] = useState(37)
-  const [copied, setCopied] = useState(false)
-
-  const uploaded = active.id === 'uploaded'
-    ? (active as typeof active & { bytes: ArrayBuffer; fileName: string })
-    : null
+  const [dragOver, setDragOver] = useState(false)
 
   const onUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) void uploadFont(file)
     e.target.value = ''
+  }
+
+  const onDrop = (e: DragEvent<HTMLElement>) => {
+    e.preventDefault()
+    setDragOver(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file) void uploadFont(file)
   }
 
   const cssLines = [
@@ -58,56 +64,86 @@ export function FontLab() {
   ]
   const cssBlock = cssLines.join('\n')
 
-  const copyCss = () => {
-    void navigator.clipboard.writeText(cssBlock).then(() => {
-      setCopied(true)
-      window.setTimeout(() => setCopied(false), 1500)
-    })
-  }
-
   const checks = analyzeText(text, 'rtl')
 
   return (
     <section id="font-lab" className="w-full">
       <div className="grid gap-5 md:grid-cols-[minmax(0,4fr)_minmax(0,8fr)]">
-        
+
         {/* Left Column */}
         <div className="flex flex-col gap-5">
           <div className="panel flex flex-col">
             <div className="win-title">Font</div>
-            <div className="p-4 flex flex-col gap-4">
-              <button 
-                type="button" 
-                className="btn btn-primary w-full justify-center" 
-                onClick={() => fileRef.current?.click()}
+            <div className="p-4 flex flex-col gap-3">
+              <div
+                className={`surface p-4 flex flex-col items-center gap-2 text-center ${dragOver ? 'drop-active' : ''}`}
+                onDragOver={(e) => {
+                  e.preventDefault()
+                  setDragOver(true)
+                }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={onDrop}
               >
-                ⤒ Upload Font
-              </button>
-              <input
-                ref={fileRef}
-                type="file"
-                accept=".ttf,.otf"
-                className="hidden"
-                onChange={onUpload}
-              />
-              <div className="text-xs text-muted text-center mt-[-8px]">
-                Supported: TTF / OTF
+                <span className="mono text-xs text-muted">Drop a font file here</span>
+                <button
+                  type="button"
+                  className="btn btn-primary w-full justify-center"
+                  onClick={() => fileRef.current?.click()}
+                >
+                  ⤒ Upload Font
+                </button>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept=".ttf,.otf,.woff,.woff2"
+                  className="hidden"
+                  onChange={onUpload}
+                  aria-label="Upload font file"
+                />
+                <div className="text-xs text-muted">
+                  Supported: TTF / OTF / WOFF · stays local
+                </div>
               </div>
 
-              <div className="pt-4 mt-2" style={{ borderTop: '1px solid var(--border)' }}>
+              {fontStatus === 'loading' && (
+                <div className="text-xs font-semibold" role="status">Loading font…</div>
+              )}
+              {fontError && (
+                <div className="text-xs font-semibold text-danger" role="alert">{fontError}</div>
+              )}
+
+              <div className="pt-3 mt-1" style={{ borderTop: '1px solid var(--border)' }}>
                 <Control label="Current font">
-                  <select className="select w-full mt-1" value={active.id} onChange={(e) => setFontId(e.target.value)}>
+                  <select
+                    className="select w-full mt-1"
+                    value={active.id}
+                    onChange={(e) => setFontId(e.target.value)}
+                    aria-label="Active font"
+                  >
                     {fonts.map((f) => (
                       <option key={f.id} value={f.id}>
                         {f.name}
-                        {f.pixel ? ' (pixel prototype)' : f.id === 'uploaded' ? ' (uploaded)' : ''}
+                        {f.id === 'uploaded' ? ' (uploaded)' : ''}
                       </option>
                     ))}
                   </select>
                 </Control>
-                {uploaded && (
-                  <div className="text-xs text-ok text-center mt-2 font-semibold">
-                    Local preview
+                {uploaded ? (
+                  <div className="flex flex-col gap-2 mt-3">
+                    <div className="mono text-xs text-ok surface p-2 break-all">
+                      ✓ {uploaded.fileName}
+                      <br />
+                      Loaded locally — never uploaded to a server.
+                    </div>
+                    <button type="button" className="btn btn-ghost justify-center" onClick={clearUploadedFont}>
+                      Remove font
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-3 surface p-3 text-xs text-muted leading-relaxed">
+                    No custom font loaded.
+                    <br />
+                    Upload a TTF or OTF file to test your own font — until then you can try the built-in fonts above.
                   </div>
                 )}
               </div>
@@ -118,8 +154,8 @@ export function FontLab() {
             <div className="win-title">Test Cases</div>
             <div className="p-4 flex flex-col gap-2">
               {TEST_CASES.map((tc) => (
-                <button 
-                  key={tc.id} 
+                <button
+                  key={tc.id}
                   type="button"
                   className="btn btn-ghost justify-start"
                   onClick={() => setText(tc.text)}
@@ -129,28 +165,23 @@ export function FontLab() {
               ))}
             </div>
           </div>
-          
+
           <div className="panel flex flex-col">
             <div className="win-title">Size</div>
             <div className="p-4 flex flex-col gap-4">
               <Control label="Size" value={`${size} px`}>
-                <input 
-                  type="range" 
-                  min={8} 
-                  max={128} 
-                  step={1} 
-                  value={size} 
-                  onChange={(e) => setSize(+e.target.value)} 
-                  className="range w-full" 
+                <input
+                  type="range"
+                  min={8}
+                  max={128}
+                  step={1}
+                  value={size}
+                  onChange={(e) => setSize(+e.target.value)}
+                  className="range w-full"
+                  aria-label="Preview size"
                 />
               </Control>
-              <button 
-                type="button"
-                className="btn btn-ghost w-full justify-center"
-                onClick={copyCss}
-              >
-                {copied ? 'Copied!' : 'Copy CSS'}
-              </button>
+              <CopyButton getText={() => cssBlock} label="Copy CSS" className="w-full justify-center" />
             </div>
           </div>
         </div>
@@ -166,13 +197,14 @@ export function FontLab() {
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 spellCheck={false}
-                style={{ 
-                  fontFamily: active.stack, 
+                aria-label="Font preview text"
+                style={{
+                  fontFamily: active.stack,
                   fontSize: `${size}px`,
                   textAlign: 'right',
                   lineHeight: 1.6,
                   padding: '20px',
-                  resize: 'vertical'
+                  resize: 'vertical',
                 }}
               />
             </div>
@@ -180,14 +212,14 @@ export function FontLab() {
 
           <div className="grid grid-cols-2 gap-5">
             <div className="panel flex flex-col">
-              <div className="win-title">Font Test</div>
+              <div className="win-title">String Checks</div>
               <div className="p-4 flex flex-col gap-3">
                 {checks.map((c) => {
-                  const mapped = LABELS_MAP[c.id] || { title: c.label, desc: c.label }
+                  const mapped = LABELS_MAP[c.id] || { title: c.label, desc: c.detail }
                   return (
                     <div key={c.id} className="flex items-start gap-2.5 text-sm">
-                      <span className={`mono shrink-0 ${c.status === 'pass' || c.status === 'warn' ? 'text-ok' : 'text-danger'}`}>
-                        {c.status === 'pass' || c.status === 'warn' ? '✓' : '✕'}
+                      <span className={`mono shrink-0 ${c.status === 'pass' || c.status === 'warn' ? 'text-ok' : c.status === 'fail' ? 'text-danger' : 'text-acc3'}`}>
+                        {c.status === 'pass' || c.status === 'warn' ? '✓' : c.status === 'fail' ? '✕' : 'ⓘ'}
                       </span>
                       <div>
                         <div className="font-semibold">{mapped.title}</div>
@@ -200,7 +232,9 @@ export function FontLab() {
                   <span className="mono shrink-0 text-warn">⚠</span>
                   <div>
                     <div className="font-semibold">Glyph coverage</div>
-                    <div className="text-xs text-muted mt-0.5">Full glyph coverage cannot be verified in browser preview.</div>
+                    <div className="text-xs text-muted mt-0.5">
+                      A browser preview cannot fully verify which glyphs your font contains. Run the Arabic Test Suite for per-string checks, and always test inside your engine.
+                    </div>
                   </div>
                 </div>
               </div>
@@ -219,12 +253,14 @@ export function FontLab() {
                   <div>
                     <div className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">Type</div>
                     <div className="font-mono">
-                      {uploaded ? (uploaded.fileName.match(/\.[^.]+$/)?.[0]?.toUpperCase().replace('.', '') || 'UNKNOWN') : 'Pre-loaded'}
+                      {uploaded
+                        ? uploaded.fileName.match(/\.[^.]+$/)?.[0]?.toUpperCase().replace('.', '') || 'UNKNOWN'
+                        : 'Built-in'}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">Font Size</div>
-                    <div className="font-mono">{size} px</div>
+                    <div className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">Preview Size</div>
+                    <div className="font-mono">{fontSize} px shared · {size} px here</div>
                   </div>
                   <div>
                     <div className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">Script Test</div>

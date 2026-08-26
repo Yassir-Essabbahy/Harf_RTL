@@ -1,40 +1,5 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react'
-
-export function Section({
-  id,
-  kicker,
-  title,
-  desc,
-  children,
-  className = '',
-}: {
-  id?: string
-  kicker?: string
-  title: string
-  desc?: string
-  children: ReactNode
-  className?: string
-}) {
-  return (
-    <section id={id} className={`mx-auto w-full max-w-7xl px-4 sm:px-6 py-14 sm:py-20 ${className}`}>
-      <div className="mb-8 sm:mb-10">
-        {kicker && <div className="kicker mb-3">{kicker}</div>}
-        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">{title}</h2>
-        {desc && <p className="mt-2 text-muted max-w-2xl text-sm sm:text-base">{desc}</p>}
-      </div>
-      {children}
-    </section>
-  )
-}
-
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'ghost'
-}
-
-export function Button({ variant = 'ghost', className = '', type = 'button', ...props }: ButtonProps) {
-  const v = variant === 'primary' ? 'btn-primary' : 'btn-ghost'
-  return <button type={type} className={`btn ${v} ${className}`} {...props} />
-}
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { copyToClipboard } from '../utils/clipboard'
 
 export function Toggle({
   checked,
@@ -72,11 +37,13 @@ export function Segmented<T extends string>({
   options: { value: T; label: ReactNode }[]
 }) {
   return (
-    <div className="seg">
+    <div className="seg" role="tablist">
       {options.map((o) => (
         <button
           key={o.value}
           type="button"
+          role="tab"
+          aria-selected={o.value === value}
           className={`seg-btn ${o.value === value ? 'active' : ''}`}
           onClick={() => onChange(o.value)}
         >
@@ -100,9 +67,51 @@ export function Control({
     <div>
       <div className="mb-1.5 flex items-baseline justify-between gap-2">
         <span className="text-xs font-semibold text-muted uppercase tracking-wide">{label}</span>
-        {value !== undefined && <span className="mono text-xs text-acc">{value}</span>}
+        {value !== undefined && (
+          <span className="mono text-xs text-acc" aria-live="polite">
+            {value}
+          </span>
+        )}
       </div>
       {children}
     </div>
+  )
+}
+
+/* Copy button with visible feedback and real error handling. */
+export function CopyButton({
+  getText,
+  label,
+  variant = 'ghost',
+  className = '',
+}: {
+  getText: () => string
+  label: string
+  variant?: 'ghost' | 'primary'
+  className?: string
+}) {
+  const [state, setState] = useState<'idle' | 'ok' | 'err'>('idle')
+  const timer = useRef<number | null>(null)
+
+  useEffect(() => () => {
+    if (timer.current) window.clearTimeout(timer.current)
+  }, [])
+
+  const onCopy = () => {
+    void copyToClipboard(getText()).then((ok) => {
+      setState(ok ? 'ok' : 'err')
+      if (timer.current) window.clearTimeout(timer.current)
+      timer.current = window.setTimeout(() => setState('idle'), 1600)
+    })
+  }
+
+  return (
+    <button
+      type="button"
+      className={`btn ${variant === 'primary' ? 'btn-primary' : 'btn-ghost'} ${className}`}
+      onClick={onCopy}
+    >
+      {state === 'ok' ? '✓ Copied!' : state === 'err' ? '✕ Copy failed' : label}
+    </button>
   )
 }

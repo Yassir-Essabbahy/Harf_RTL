@@ -1,57 +1,78 @@
-# RTL Forge — Arabic Game Dev Toolkit
+# RTL Forge
 
-A browser-based prototype for game developers who need Arabic / RTL text to work in games
-(especially Unity). Test rendering, preview fonts, detect common RTL problems, check a
-pixel-art preview, and generate a font-atlas prototype with PNG + character-list export.
+Arabic tools for game developers.
 
-**100% client-side.** No backend, no AI, no accounts, no tracking.
+> **Test Arabic before it reaches your game.**
 
-## Quick start
+RTL Forge is a browser-based developer toolkit for testing Arabic/RTL text,
+fonts, and pixel rendering before they reach your game engine. Everything
+runs locally in your browser.
+
+## Features
+
+- **RTL Text Lab** — test Arabic and RTL text: direction, alignment, shaping,
+  mixed Arabic/Latin strings, numbers, punctuation and diacritics, with copyable CSS.
+- **Font Lab** — load local `.ttf` / `.otf` / `.woff` fonts (drag-and-drop or picker)
+  and see how they render Arabic. Uploaded fonts stay on your machine.
+- **Arabic Test Suite** — run a standardized battery of 12 Arabic rendering tests
+  (connected letters, diacritics, digits, mixed scripts, parentheses, dialogue…)
+  against your current font.
+- **Pixel Preview** — preview Arabic text with pixel-style rendering: low
+  resolutions (320×180 … 160×90), 1–4× nearest-neighbor scaling, outlines,
+  shadows and colors.
+- **Unity Export** — carry your tested text and settings into Unity: copy TMP
+  preparation notes, C# example code (with `isRightToLeft`), export JSON
+  settings or a PNG of the pixel preview.
+
+## Tech Stack
+
+- [React 18](https://react.dev/)
+- [TypeScript](https://www.typescript.org/)
+- [Vite](https://vitejs.dev/)
+- [Tailwind CSS 4](https://tailwindcss.com/) (via `@tailwindcss/vite`)
+- Custom Windows 95/98-style theme (plain CSS custom properties)
+- Canvas 2D API for pixel rasterization
+
+No backend. No frameworks beyond React. Built-in font samples are loaded from
+Google Fonts at runtime.
+
+## Local Development
 
 ```bash
 npm install
-npm run dev      # local dev server
-npm run build    # type-check + production build in dist/
-npm run preview  # serve the production build
+npm run dev
 ```
 
-## What's inside
+## Build
 
-- **Text Lab** — Arabic editor with font / size / weight / spacing / line-height /
-  alignment / direction controls, background modes and a live RTL preview.
-- **RTL Compatibility Check** — heuristic client-side rules (Arabic detection, bidi
-  mixing, diacritics, letter-spacing warnings…). Not AI, just string analysis.
-- **Pixel Preview** — text rasterized small on canvas, upscaled with smoothing off:
-  integer sizes, crisp edges, optional pixel grid, game-style backgrounds.
-- **Font Lab** — Noto Sans Arabic, Cairo, Amiri, IBM Plex Sans Arabic, plus the
-  fictional **RTL Forge Pixel** rendered through the pixel pipeline.
-- **Unity Font Export (prototype)** — pick font, size, character preset, padding and
-  atlas size; generates a canvas atlas, exports PNG and a character list `.txt`.
-  Visual reference only — not a production TextMeshPro asset.
-
-## Stack
-
-React 18 · TypeScript · Vite · Tailwind CSS v4 · HTML Canvas.
-Arabic web fonts load from Google Fonts with system fallbacks.
-
-## Project structure
-
-```
-src/
-  App.tsx                    # context (active font, theme) + page assembly
-  index.css                  # theme tokens, Zellij patterns, buttons, panels
-  data/fonts.ts              # font definitions
-  data/charsets.ts           # Arabic character groups + export presets
-  data/presets.ts            # Text Lab example presets
-  utils/rtlCheck.ts          # compatibility check rules
-  utils/canvasText.ts        # pixel rasterization helpers
-  utils/atlas.ts             # atlas generation + exports
-  components/                # Navbar, Hero, TextLab, FontLab, UnityExport,
-                             # Marketing, GameDemo, Docs, Footer, ui primitives
+```bash
+npm run build    # type-checks then bundles into dist/
+npm run preview  # serve the production build locally
 ```
 
-## Scope
+The output in `dist/` is fully static — deployable to any static host.
 
-Prototype / MVP. No Unity integration, no backend, no AI, no auth. Tuning happens in
-`src/index.css` (tokens) and `src/data/*` (fonts, presets, character sets).
-"# Harf_RTL" 
+## Privacy
+
+Uploaded fonts are parsed **entirely in your browser** using the FontFace API.
+They are never uploaded to any server, and no analytics or tracking exist in
+this project.
+
+## Limitations — Read This
+
+Be honest with yourself about what a browser tool can and cannot verify:
+
+- **Browser rendering ≠ game rendering.** Browsers shape Arabic correctly out
+  of the box; many game engines (including Unity's default text stack) do not.
+  A perfect result here does not guarantee correct output in your engine.
+- **Glyph coverage detection is best-effort.** The browser cannot reliably
+  enumerate every glyph in your font. The Test Suite reports what the font
+  subsystem claims per string — treat warnings as "check manually".
+- **Pixel Preview is an approximation.** It simulates low-resolution
+  rasterization plus nearest-neighbor upscaling. Real bitmap/pixel fonts are
+  hand-drawn and will differ.
+- **Test Suite scores are not scientific compatibility ratings.** They count
+  only what RTL Forge can actually verify locally (rendering succeeded, shaping
+  metrics look sane, the font subsystem reports coverage).
+- **Unity Export is a reference sheet**, not a solution: it does not generate
+  TMP font assets, pre-shape Arabic text, or fix engine-side bidi/shaping.

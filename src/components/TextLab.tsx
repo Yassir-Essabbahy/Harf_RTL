@@ -1,14 +1,13 @@
 import { useRef, useState, type ChangeEvent } from 'react'
 import { useApp } from '../context/AppContext'
-import { DEFAULT_TEXT, PRESETS, type TextPreset } from '../data/presets'
+import { PRESETS, type TextPreset } from '../data/presets'
 import { PixelCanvas } from './PixelCanvas'
 import { CompatibilityCheck } from './CompatibilityCheck'
-import { Control, Segmented, Toggle } from './ui'
+import { Control, Segmented, Toggle, CopyButton } from './ui'
 import { analyzeText } from '../utils/rtlCheck'
 import { downloadBlob, downloadText } from '../utils/atlas'
 
 type Align = 'start' | 'center' | 'end'
-type Dir = 'rtl' | 'ltr'
 type Bg = 'light' | 'checker' | 'paper' | 'game'
 
 const BG_CLASS: Record<Bg, string> = {
@@ -18,25 +17,27 @@ const BG_CLASS: Record<Bg, string> = {
   game: 'bg-game scanlines',
 }
 
-const COLOR_SWATCHES = ['#17140f', '#eef8f3', '#b3382c', '#1f6f54', '#1d4ed8', '#b45309', '#7c3aed']
-
-const PIXEL_SCALE = 3
+const BG_SWATCHES: { id: Bg; label: string; css: string }[] = [
+  { id: 'paper', label: 'White', css: '#ffffff' },
+  { id: 'light', label: 'Silver', css: '#dfdfdf' },
+  { id: 'checker', label: 'Checker', css: 'conic-gradient(#f0f0f0 25%, #ffffff 0 50%, #f0f0f0 0 75%, #ffffff 0) 0 0/8px 8px' },
+  { id: 'game', label: 'Game', css: '#000000' },
+]
 
 export function TextLab() {
-  const { fonts, active, setFontId, uploadFont, clearUploadedFont } = useApp()
+  const {
+    fonts, active, setFontId, uploadFont, clearUploadedFont,
+    uploaded, fontStatus, fontError,
+    text, setText, fontSize, setFontSize, weight, setWeight,
+    direction, setDirection, align, setAlign,
+    pixelMode, setPixelMode,
+  } = useApp()
   const fileRef = useRef<HTMLInputElement>(null)
-  const [text, setText] = useState(DEFAULT_TEXT)
-  const [size, setSize] = useState(34)
-  const [weight, setWeight] = useState(600)
   const [spacing, setSpacing] = useState(0)
   const [lineH, setLineH] = useState(1.6)
-  const [align, setAlign] = useState<Align>('start')
-  const [dir, setDir] = useState<Dir>('rtl')
-  const [bg, setBg] = useState<Bg>('light')
+  const [bg, setBg] = useState<Bg>('paper')
   const [color, setColor] = useState('#17140f')
-  const [pixel, setPixel] = useState(false)
   const [grid, setGrid] = useState(true)
-  const [copied, setCopied] = useState(false)
 
   const onFontChange = (id: string) => {
     setFontId(id)
@@ -46,47 +47,37 @@ export function TextLab() {
 
   const applyPreset = (p: TextPreset) => {
     setText(p.text)
-    if (p.size) setSize(p.size)
+    if (p.size) setFontSize(p.size)
     if (p.pixel) {
-      setPixel(true)
+      setPixelMode(true)
       setGrid(true)
       setBg('game')
       setAlign('center')
-    } else if (pixel) {
-      setPixel(false)
-      setBg('light')
+    } else if (pixelMode) {
+      setPixelMode(false)
+      setBg('paper')
       setAlign('start')
     }
   }
 
   const words = text.trim() ? text.trim().split(/\s+/).length : 0
   const charCount = [...text].length
-  const smallSize = Math.max(8, Math.round(size / PIXEL_SCALE))
-  const pixelColor = color
 
-  const uploaded = active.id === 'uploaded'
-    ? (active as typeof active & { bytes: ArrayBuffer; fileName: string })
-    : null
-
-  const resolvedAlign = align === 'center' ? 'center' : dir === 'rtl' ? (align === 'start' ? 'right' : 'left') : align === 'start' ? 'left' : 'right'
+  const resolvedAlign =
+    align === 'center'
+      ? 'center'
+      : dirSide(direction, align)
   const cssLines = [
-    'direction: ' + dir + ';',
-    'text-align: ' + resolvedAlign + ';',
     `font-family: ${active.stack};`,
-    `font-size: ${size}px;`,
+    `direction: ${direction};`,
+    `text-align: ${resolvedAlign};`,
+    `font-size: ${fontSize}px;`,
     `font-weight: ${weight};`,
     `line-height: ${lineH.toFixed(1)};`,
   ]
-  if (spacing > 0) cssLines.push(`letter-spacing: ${spacing}px;`)
+  if (spacing !== 0) cssLines.push(`letter-spacing: ${spacing}em;`)
   cssLines.push(`color: ${color};`)
   const cssBlock = cssLines.join('\n')
-
-  const copyCss = () => {
-    void navigator.clipboard.writeText(cssBlock).then(() => {
-      setCopied(true)
-      window.setTimeout(() => setCopied(false), 1500)
-    })
-  }
 
   const onUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -94,29 +85,31 @@ export function TextLab() {
     e.target.value = ''
   }
 
-  const downloadRtlFont = () => {
+  const downloadFontFile = () => {
     if (!uploaded) return
-    const ext = uploaded.fileName.match(/\.[^.]+$/)?.[0] ?? '.ttf'
-    downloadBlob(
-      `${uploaded.name}-rtl-fixed${ext}`,
-      new Blob([uploaded.bytes], { type: 'application/octet-stream' }),
-    )
+    downloadBlob(uploaded.fileName, new Blob([uploaded.bytes], { type: 'application/octet-stream' }))
   }
 
   const downloadReport = () => {
-    const checks = analyzeText(text, dir)
+    const checks = analyzeText(text, direction)
     const lines = [
-      'RTL Forge — RTL report',
-      `Font: ${active.name}`,
-      `Preview: ${size}px · weight ${weight} · dir=${dir} · align=${align} · line-height ${lineH.toFixed(1)}`,
+      'RTL Forge — text report (browser-side analysis)',
+      `Date: ${new Date().toISOString()}`,
+      `Font: ${uploaded ? `${uploaded.fileName} (loaded locally)` : active.name}`,
       '',
-      'Compatibility checks:',
+      'Text:',
+      text || '(empty)',
+      '',
+      `Settings: size=${fontSize}px · weight=${weight} · dir=${direction} · align=${align}`,
+      `          line-height=${lineH.toFixed(1)}${spacing !== 0 ? ` · letter-spacing=${spacing}em` : ''}`,
+      '',
+      'String checks:',
       ...checks.map((c) => `  [${c.status.toUpperCase()}] ${c.label} — ${c.detail}`),
       '',
-      'Note: the exported font keeps its original glyph and shaping tables untouched,',
-      'so Arabic contextual shaping, ligatures and mark positioning stay intact.',
+      'Note: this report analyses the text string only. It cannot verify glyph',
+      'coverage or in-game rendering — test inside your target engine too.',
     ]
-    downloadText(`${active.name.replace(/\s+/g, '-').toLowerCase()}-rtl-report.txt`, lines.join('\n'))
+    downloadText(`${active.name.replace(/\s+/g, '-').toLowerCase()}-report.txt`, lines.join('\n'))
   }
 
   return (
@@ -130,37 +123,41 @@ export function TextLab() {
                 {charCount} chars · {words} words
               </span>
             </div>
-            <div className="p-5 flex flex-col gap-4">
+            <div className="p-4 flex flex-col gap-4">
+              <textarea
+                className="textarea font-arabic"
+                dir={direction}
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                rows={7}
+                spellCheck={false}
+                aria-label="Arabic test text"
+              />
 
-            <textarea
-              className="textarea font-arabic"
-              dir={dir}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              rows={7}
-              spellCheck={false}
-            />
-
-            <div>
-              <div className="text-xs font-semibold text-muted uppercase tracking-wide mb-2">Example presets</div>
-              <div className="flex flex-wrap gap-2">
-                {PRESETS.map((p) => (
-                  <button key={p.id} className="chip chip-btn" onClick={() => applyPreset(p)}>
-                    {p.label}
-                  </button>
-                ))}
+              <div>
+                <div className="text-xs font-semibold text-muted uppercase tracking-wide mb-2">Example presets</div>
+                <div className="flex flex-wrap gap-2">
+                  {PRESETS.map((p) => (
+                    <button key={p.id} type="button" className="chip chip-btn" onClick={() => applyPreset(p)}>
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-x-3 gap-y-4 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
-              <div className="col-span-2">
+              <div className="grid gap-x-3 gap-y-4 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
                 <Control label="Font">
                   <div className="flex gap-2">
-                    <select className="select" value={active.id} onChange={(e) => onFontChange(e.target.value)}>
+                    <select
+                      className="select"
+                      value={active.id}
+                      onChange={(e) => onFontChange(e.target.value)}
+                      aria-label="Preview font"
+                    >
                       {fonts.map((f) => (
                         <option key={f.id} value={f.id}>
                           {f.name}
-                          {f.pixel ? ' (pixel prototype)' : f.id === 'uploaded' ? ' (uploaded)' : ''}
+                          {f.id === 'uploaded' ? ' (uploaded)' : ''}
                         </option>
                       ))}
                     </select>
@@ -173,56 +170,85 @@ export function TextLab() {
                       accept=".ttf,.otf,.woff,.woff2"
                       className="hidden"
                       onChange={onUpload}
+                      aria-label="Upload font file"
                     />
                   </div>
                 </Control>
+                {fontStatus === 'loading' && (
+                  <div className="text-xs font-semibold" role="status">Loading font…</div>
+                )}
+                {fontError && (
+                  <div className="text-xs font-semibold text-danger" role="alert">{fontError}</div>
+                )}
                 {uploaded && (
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <button type="button" className="btn btn-primary" onClick={downloadRtlFont}>
-                      ↓ Download RTL-fixed font
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="mono text-xs text-ok">✓ {uploaded.fileName} — loaded locally</span>
+                    <span className="flex-1" />
+                    <button type="button" className="btn btn-mini btn-ghost" onClick={downloadFontFile} title="Downloads an unmodified copy of the original file">
+                      ↓ Download file
                     </button>
-                    <button type="button" className="btn btn-ghost" onClick={downloadReport}>
-                      RTL report
+                    <button type="button" className="btn btn-mini btn-ghost" onClick={downloadReport}>
+                      Report
                     </button>
-                    <button type="button" className="btn btn-ghost" onClick={clearUploadedFont}>
+                    <button type="button" className="btn btn-mini btn-ghost" onClick={clearUploadedFont}>
                       Remove
                     </button>
                   </div>
                 )}
               </div>
-              <Control label="Size" value={`${size}px`}>
-                <input type="range" min={12} max={96} step={1} value={size} onChange={(e) => setSize(+e.target.value)} className="range" />
-              </Control>
-              <Control label="Weight" value={weight}>
-                <select className="select" value={weight} onChange={(e) => setWeight(+e.target.value)}>
-                  {active.weights.map((w) => (
-                    <option key={w} value={w}>{w}</option>
-                  ))}
-                </select>
-              </Control>
-              {active.id === 'uploaded' && (
-                <div className="text-xs text-ok mt-1 font-semibold text-center col-span-2">
-                  Local font active. It stays in your browser.
-                </div>
-              )}
-            </div>
             </div>
           </div>
 
           <div className="panel flex flex-col">
             <div className="win-title">Settings</div>
             <div className="p-4 flex flex-col gap-4">
-              <Control label="Size" value={`${size}px`}>
-                <input type="range" min={8} max={128} step={1} value={size} onChange={(e) => setSize(+e.target.value)} className="range w-full" />
+              <Control label="Size" value={`${fontSize}px`}>
+                <input
+                  type="range"
+                  min={8}
+                  max={96}
+                  step={1}
+                  value={fontSize}
+                  onChange={(e) => setFontSize(+e.target.value)}
+                  className="range w-full"
+                  aria-label="Font size"
+                />
               </Control>
               <Control label="Weight" value={weight}>
-                <input type="range" min={100} max={900} step={100} value={weight} onChange={(e) => setWeight(+e.target.value)} className="range w-full" />
+                <select
+                  className="select"
+                  value={weight}
+                  onChange={(e) => setWeight(+e.target.value)}
+                  aria-label="Font weight"
+                >
+                  {[...new Set([...active.weights, weight])].sort((a, b) => a - b).map((w) => (
+                    <option key={w} value={w}>{w}</option>
+                  ))}
+                </select>
               </Control>
-              <Control label="Letter Spacing" value={`${spacing}em`}>
-                <input type="range" min={-0.1} max={0.5} step={0.01} value={spacing} onChange={(e) => setSpacing(+e.target.value)} className="range w-full" />
+              <Control label="Letter Spacing" value={`${spacing.toFixed(2)}em`}>
+                <input
+                  type="range"
+                  min={-0.05}
+                  max={0.5}
+                  step={0.01}
+                  value={spacing}
+                  onChange={(e) => setSpacing(+e.target.value)}
+                  className="range w-full"
+                  aria-label="Letter spacing"
+                />
               </Control>
-              <Control label="Line Height" value={lineH}>
-                <input type="range" min={0.5} max={3} step={0.1} value={lineH} onChange={(e) => setLineH(+e.target.value)} className="range w-full" />
+              <Control label="Line Height" value={lineH.toFixed(1)}>
+                <input
+                  type="range"
+                  min={0.5}
+                  max={3}
+                  step={0.1}
+                  value={lineH}
+                  onChange={(e) => setLineH(+e.target.value)}
+                  className="range w-full"
+                  aria-label="Line height"
+                />
               </Control>
             </div>
           </div>
@@ -240,16 +266,17 @@ export function TextLab() {
                 ]}
               />
               <Segmented
-                value={dir}
-                onChange={(v) => setDir(v as Dir)}
+                value={direction}
+                onChange={(v) => setDirection(v as 'rtl' | 'ltr')}
                 options={[
                   { value: 'rtl', label: 'RTL' },
                   { value: 'ltr', label: 'LTR' },
                 ]}
               />
+              <Toggle label="Pixel render (canvas)" checked={pixelMode} onChange={setPixelMode} />
+              {pixelMode && <Toggle label="Pixel grid" checked={grid} onChange={setGrid} />}
             </div>
           </div>
-
         </div>
 
         <div className="flex flex-col gap-5">
@@ -257,51 +284,61 @@ export function TextLab() {
             <div className="win-title flex justify-between items-center">
               Preview
               <div className="flex items-center gap-4">
-                <span className={`chip mono ${pixel ? 'chip-acc' : ''}`}>{pixel ? 'PIXEL' : 'DOM'}</span>
+                <span className={`chip mono ${pixelMode ? 'chip-acc' : ''}`}>{pixelMode ? 'PIXEL' : 'DOM'}</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted">Canvas BG</span>
-                  <div className="flex gap-1" role="group" aria-label="Background color">
-                    {['light', 'dark', 'black', 'grid'].map((c) => (
+                  <span className="text-xs text-muted">BG</span>
+                  <div className="flex gap-1" role="group" aria-label="Background style">
+                    {BG_SWATCHES.map((c) => (
                       <button
-                        key={c}
+                        key={c.id}
                         type="button"
-                        aria-label={`Set background ${c}`}
-                        className={`swatch ${c === bg ? 'swatch-active' : ''}`}
-                        style={{
-                          background: c === 'light' ? '#fff' : c === 'dark' ? '#1e1e1e' : c === 'black' ? '#000' : 'url(/grid.png)',
-                        }}
-                        onClick={() => setBg(c as Bg)}
+                        title={c.label}
+                        aria-label={`Set background: ${c.label}`}
+                        aria-pressed={c.id === bg}
+                        className={`swatch ${c.id === bg ? 'swatch-active' : ''}`}
+                        style={{ background: c.css }}
+                        onClick={() => setBg(c.id)}
                       />
                     ))}
                   </div>
+                  <input
+                    type="color"
+                    value={color}
+                    onChange={(e) => setColor(e.target.value)}
+                    className="color-input"
+                    aria-label="Text color"
+                    title="Text color"
+                  />
                 </div>
               </div>
             </div>
-            
+
             <div className="p-5 flex flex-col flex-1">
               <div className={`preview-surface ${BG_CLASS[bg]} flex-1`} style={{ color }}>
-                {pixel ? (
+                {!text.trim() ? (
+                  <span className="mono text-sm opacity-60">Type text above to preview it.</span>
+                ) : pixelMode ? (
                   <PixelCanvas
                     text={text}
                     family={active.family}
                     weight={weight}
-                    small={smallSize}
-                    scale={PIXEL_SCALE}
+                    small={Math.max(8, Math.round(fontSize / 3))}
+                    scale={3}
                     lineH={lineH}
                     align={align}
-                    dir={dir}
-                    color={pixelColor}
+                    dir={direction}
+                    color={color}
                     grid={grid}
                   />
                 ) : (
                   <div
-                    dir={dir}
+                    dir={direction}
                     className="max-w-full"
                     style={{
                       fontFamily: active.stack,
-                      fontSize: size,
+                      fontSize,
                       fontWeight: weight,
-                      letterSpacing: spacing ? `${spacing}px` : undefined,
+                      letterSpacing: spacing !== 0 ? `${spacing}em` : undefined,
                       lineHeight: lineH,
                       textAlign: align,
                       whiteSpace: 'pre-wrap',
@@ -313,26 +350,30 @@ export function TextLab() {
               </div>
 
               <p className="mt-3 mono text-xs text-muted">
-                {pixel
-                  ? `pixel render · ${smallSize}px raster upscaled ×${PIXEL_SCALE} · smoothing off`
-                  : `${active.name} · ${size}px · weight ${weight} · dir=${dir}`}
+                {pixelMode
+                  ? `pixel render · ${Math.max(8, Math.round(fontSize / 3))}px raster upscaled ×3 · smoothing off`
+                  : `${active.name} · ${fontSize}px · weight ${weight} · dir=${direction}`}
               </p>
 
               <div className="mt-3 surface p-3">
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-xs font-semibold uppercase tracking-wide">Rendering</span>
-                  <button type="button" className="btn btn-ghost btn-mini" onClick={copyCss}>
-                    {copied ? '✓ Copied' : 'Copy CSS'}
-                  </button>
+                  <CopyButton getText={() => cssBlock} label="Copy CSS" variant="ghost" className="btn-mini" />
                 </div>
                 <pre className="mono text-xs whitespace-pre-wrap text-muted m-0">{cssBlock}</pre>
               </div>
             </div>
           </div>
 
-          <CompatibilityCheck text={text} direction={dir} />
+          <CompatibilityCheck text={text} direction={direction} />
         </div>
       </div>
     </section>
   )
+}
+
+function dirSide(dir: 'rtl' | 'ltr', align: Align): string {
+  if (align === 'center') return 'center'
+  if (align === 'start') return dir === 'rtl' ? 'right' : 'left'
+  return dir === 'rtl' ? 'left' : 'right'
 }

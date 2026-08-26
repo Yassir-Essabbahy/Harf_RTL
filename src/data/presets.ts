@@ -6,8 +6,6 @@ export interface TextPreset {
   pixel?: boolean
 }
 
-export const DEFAULT_TEXT = 'مرحبا بك في عالم الألعاب'
-
 export const PRESETS: TextPreset[] = [
   { id: 'dialogue', label: 'Dialogue', text: 'أين كنت؟' },
   { id: 'button', label: 'Button', text: 'ابدأ اللعبة', size: 30 },

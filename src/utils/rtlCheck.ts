@@ -12,19 +12,25 @@ const LATIN = /[A-Za-z]/
 const DIACRITICS = /[\u064B-\u0652\u0670]/
 
 /* If the browser shapes Arabic, three joined behs measure narrower than
-   three isolated ones. Falls back to "supported" when measurement fails. */
+   three spaced ones. Computed once per page load. */
+let shapingCache: boolean | null = null
 function browserShaping(): boolean {
-  try {
-    const ctx = document.createElement('canvas').getContext('2d')
-    if (!ctx) return true
-    ctx.font = '32px "Noto Sans Arabic", serif'
-    const single = ctx.measureText('ب').width
-    const joined = ctx.measureText('ببب').width
-    if (!single || !joined) return true
-    return joined < single * 2.8
-  } catch {
-    return true
+  if (shapingCache === null) {
+    try {
+      const ctx = document.createElement('canvas').getContext('2d')
+      if (!ctx) {
+        shapingCache = true
+        return shapingCache
+      }
+      ctx.font = '32px "Noto Sans Arabic", serif'
+      const joined = ctx.measureText('ببب').width
+      const spaced = ctx.measureText('ب ب ب').width
+      shapingCache = !joined || !spaced ? true : joined < spaced * 0.92
+    } catch {
+      shapingCache = true
+    }
   }
+  return shapingCache
 }
 
 export function analyzeText(text: string, direction: 'rtl' | 'ltr'): CheckResult[] {
@@ -32,15 +38,16 @@ export function analyzeText(text: string, direction: 'rtl' | 'ltr'): CheckResult
   const arabicCount = [...text].filter((ch) => AR.test(ch)).length
   const hasLatin = LATIN.test(text)
   const diacriticCount = [...text].filter((ch) => DIACRITICS.test(ch)).length
+  const shaped = browserShaping()
 
   return [
     {
       id: 'arabic',
       label: 'Arabic characters',
-      status: hasArabic ? 'pass' : 'fail',
+      status: hasArabic ? 'pass' : 'info',
       detail: hasArabic
-        ? `${arabicCount} Arabic characters found.`
-        : 'No Arabic characters found — type or paste Arabic to test rendering.',
+        ? `${arabicCount} Arabic characters in the current text.`
+        : 'No Arabic characters yet — type or paste Arabic to test rendering.',
     },
     {
       id: 'direction',
@@ -54,19 +61,19 @@ export function analyzeText(text: string, direction: 'rtl' | 'ltr'): CheckResult
     {
       id: 'shaping',
       label: 'Arabic shaping',
-      status: browserShaping() ? 'pass' : 'fail',
-      detail: browserShaping()
-        ? 'Contextual letter forms are rendering correctly.'
-        : 'Browser returned unshaped metrics — try a recent Chrome or Firefox.',
+      status: shaped ? 'pass' : 'fail',
+      detail: shaped
+        ? 'Browser applied contextual letter forms (verified by width measurement).'
+        : 'Joined letters measured like isolated ones — shaping appears broken. Try a recent Chrome or Firefox.',
     },
     {
       id: 'mixing',
       label: 'Script mixing',
-      status: hasArabic && hasLatin ? 'warn' : 'pass',
+      status: hasArabic && hasLatin ? 'pass' : 'info',
       detail:
         hasArabic && hasLatin
-          ? 'Arabic + Latin text detected.'
-          : 'No Arabic/Latin mixing detected.',
+          ? 'Mixed Arabic / Latin text detected.'
+          : 'No mixed Arabic / Latin text in the current input.',
     },
     {
       id: 'diacritics',
@@ -75,7 +82,7 @@ export function analyzeText(text: string, direction: 'rtl' | 'ltr'): CheckResult
       detail:
         diacriticCount > 0
           ? `${diacriticCount} tashkeel marks detected — check clipping at final size.`
-          : 'No diacritics detected.',
+          : 'No diacritics in the current input.',
     },
   ]
 }

@@ -291,13 +291,14 @@ body {
 
 .seg {
   display: flex;
+  flex-wrap: wrap;
   gap: 2px;
   background: transparent;
   border: none;
   padding: 0;
 }
 .seg-btn {
-  flex: 1;
+  flex: 1 1 auto;
   padding: 0.35rem 0.6rem;
   font-size: 0.72rem;
   font-weight: 400;
@@ -445,4 +446,60 @@ body {
   color: var(--accent-strong);
   animation: blink 1s steps(1) infinite;
   margin-inline-start: 2px;
+}
+
+/* ---------- focus / a11y ---------- */
+
+.seg-btn:focus-visible,
+.chip-btn:focus-visible,
+.swatch:focus-visible,
+.switch:focus-visible,
+.win-btn:focus-visible,
+.color-input:focus-visible,
+.btn:focus-visible,
+.select:focus-visible,
+.textarea:focus-visible,
+.range:focus-visible {
+  outline: 2px solid var(--accent-strong);
+  outline-offset: 1px;
+}
+
+/* Safety net so every interactive control gets the same focus treatment
+   even without one of the classes above (e.g. Home tool-card buttons). */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent-strong);
+  outline-offset: 1px;
+}
+
+/* ---------- test suite ---------- */
+
+.field-sample {
+  background: var(--field);
+  color: var(--fg);
+  box-shadow: var(--bevel-in);
+  padding: 0.75rem;
+  min-height: 2.75rem;
+  max-height: 9rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+
+/* ---------- drag & drop ---------- */
+
+.drop-active {
+  outline: 2px dashed var(--accent-strong);
+  outline-offset: -4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .fade-up { animation: none; }
+  .caret::after { animation: none; }
+  .switch .knob { transition: none; }
 }
