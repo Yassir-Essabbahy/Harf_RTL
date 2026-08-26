@@ -18,7 +18,7 @@ export function Home({ onOpen }: { onOpen: (tab: TabId) => void }) {
       <div className="panel">
         <div className="win-title">
           <Logo size={14} />
-          RTL Forge
+          Haraf Forge
           <span className="ml-auto mono text-xs opacity-80">v0.1</span>
         </div>
         <div className="p-6 sm:p-8 flex flex-col gap-5">

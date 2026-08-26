@@ -90,7 +90,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       const buffer = await file.arrayBuffer()
       const clean = file.name.replace(/[^a-zA-Z0-9_-]/g, '')
-      const family = `RF-Uploaded-${clean}-${Math.random().toString(36).slice(2, 6)}`
+      const family = `HF-Uploaded-${clean}-${Math.random().toString(36).slice(2, 6)}`
       const face = new FontFace(family, buffer)
       await face.load()
       if (uploaded) removeFontFace(uploaded.family)

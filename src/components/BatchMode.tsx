@@ -162,7 +162,7 @@ export function BatchMode() {
     const data = exportData()
     if (!data.length) return
     const payload = data.map(({ failCount: _f, warnCount: _w, ...rest }) => rest)
-    downloadBlob('rtl-forge-batch-results.json', new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }))
+    downloadBlob('haraf-forge-batch-results.json', new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }))
   }
 
   const exportCsv = () => {
@@ -172,7 +172,7 @@ export function BatchMode() {
     for (const r of data) {
       lines.push([csvCell(r.key), r.overallStatus, String(r.failCount), String(r.warnCount), csvCell(r.text)].join(','))
     }
-    downloadBlob('rtl-forge-batch-results.csv', new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' }))
+    downloadBlob('haraf-forge-batch-results.csv', new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' }))
   }
 
   const hasResults = counted.length > 0

@@ -36,12 +36,12 @@ type Theme = 'dark' | 'light'
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabId>(() => tabFromHash())
   const [theme, setTheme] = useState<Theme>(() =>
-    localStorage.getItem('rf-theme') === 'dark' ? 'dark' : 'light',
+    localStorage.getItem('hf-theme') === 'dark' ? 'dark' : 'light',
   )
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
-    localStorage.setItem('rf-theme', theme)
+    localStorage.setItem('hf-theme', theme)
   }, [theme])
 
   useEffect(() => {
@@ -84,7 +84,7 @@ export default function App() {
               <aside className="panel h-fit lg:sticky lg:top-6">
                 <div className="win-title">
                   <Logo size={14} />
-                  RTL Forge
+                  Haraf Forge
                   <button
                     type="button"
                     className="win-btn"
@@ -174,7 +174,7 @@ export default function App() {
           </div>
 
           <footer className="mt-8 pt-4 flex flex-wrap items-center justify-between gap-2 mono text-xs" style={{ borderTop: '1px solid var(--silver-lo)' }}>
-            <span>RTL Forge v0.1 — test Arabic before it reaches your game.</span>
+            <span>Haraf Forge v0.1 — test Arabic before it reaches your game.</span>
             <span className="text-muted">100% local · fonts never leave your browser.</span>
           </footer>
         </main>

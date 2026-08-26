@@ -1,10 +1,10 @@
-# RTL Forge
+# Haraf Forge
 
 Arabic tools for game developers.
 
 > **Test Arabic before it reaches your game.**
 
-RTL Forge is a browser-based developer toolkit for testing Arabic/RTL text,
+Haraf Forge is a browser-based developer toolkit for testing Arabic/RTL text,
 fonts, and pixel rendering before they reach your game engine. Everything
 runs locally in your browser.
 
@@ -74,7 +74,7 @@ Be honest with yourself about what a browser tool can and cannot verify:
   rasterization plus nearest-neighbor upscaling. Real bitmap/pixel fonts are
   hand-drawn and will differ.
 - **Test Suite scores are not scientific compatibility ratings.** They count
-  only what RTL Forge can actually verify locally (rendering succeeded, shaping
-  metrics look sane, the font subsystem reports coverage).
+  only what Haraf Forge can actually verify locally (rendering succeeded,
+  shaping metrics look sane, the font subsystem reports coverage).
 - **Unity Export is a reference sheet**, not a solution: it does not generate
   TMP font assets, pre-shape Arabic text, or fix engine-side bidi/shaping.

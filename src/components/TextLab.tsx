@@ -93,7 +93,7 @@ export function TextLab() {
   const downloadReport = () => {
     const checks = analyzeText(text, direction)
     const lines = [
-      'RTL Forge — text report (browser-side analysis)',
+      'Haraf Forge — text report (browser-side analysis)',
       `Date: ${new Date().toISOString()}`,
       `Font: ${uploaded ? `${uploaded.fileName} (loaded locally)` : active.name}`,
       '',

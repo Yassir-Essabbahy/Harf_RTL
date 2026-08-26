@@ -16,8 +16,8 @@ const SECTIONS: { title: string; body: string[] }[] = [
   {
     title: 'Why can a font look correct here but fail in my game?',
     body: [
-      'The browser shapes Arabic before RTL Forge ever sees it. Your game may use a different shaping engine, an outdated font table, or no shaping at all.',
-      'A font that renders perfectly in Chrome can still produce broken output inside Unity. Treat RTL Forge as an early filter for obvious problems — not as proof your game is safe.',
+      'The browser shapes Arabic before Haraf Forge ever sees it. Your game may use a different shaping engine, an outdated font table, or no shaping at all.',
+      'A font that renders perfectly in Chrome can still produce broken output inside Unity. Treat Haraf Forge as an early filter for obvious problems — not as proof your game is safe.',
     ],
   },
   {
@@ -35,12 +35,12 @@ const SECTIONS: { title: string; body: string[] }[] = [
     ],
   },
   {
-    title: 'What does RTL Forge NOT guarantee?',
+    title: 'What does Haraf Forge NOT guarantee?',
     body: [
       '- That your font contains every Arabic glyph (browser coverage checks are best-effort).',
       '- That browser rendering matches your engine\'s rendering.',
       '- That the test suite score predicts in-game quality — it only counts what can be verified locally.',
-      '- That uploaded fonts are safe to ship; RTL Forge never inspects licensing. Check your font\'s license before using it commercially.',
+      '- That uploaded fonts are safe to ship; Haraf Forge never inspects licensing. Check your font\'s license before using it commercially.',
     ],
   },
 ]

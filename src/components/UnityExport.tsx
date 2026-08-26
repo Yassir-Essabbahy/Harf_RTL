@@ -32,7 +32,7 @@ export function UnityExport() {
 
   const getTMPSettings = () => {
     return [
-      'RTL Forge — Unity / TextMeshPro preparation sheet',
+      'Haraf Forge — Unity / TextMeshPro preparation sheet',
       '',
       `Font file: ${fontLabel}`,
       `Text (${text.length} chars):`,
@@ -69,7 +69,7 @@ export function UnityExport() {
       '// Requires TextMeshPro. Unity does not shape Arabic by default;',
       '// pair this with an RTL/Arabic solution or a pre-shaped font asset.',
       `// Font used for testing: ${fontLabel}`,
-      'public class RTLForgeExample : MonoBehaviour',
+      'public class HarafForgeExample : MonoBehaviour',
       '{',
       '    [SerializeField] private TMP_Text textComponent;',
       '',
@@ -105,7 +105,7 @@ export function UnityExport() {
         bgColor,
       },
     }
-    downloadBlob('rtl-forge-settings.json', new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }))
+    downloadBlob('haraf-forge-settings.json', new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }))
   }
 
   /* Renders the current pixel configuration into a detached canvas so the
@@ -133,7 +133,7 @@ export function UnityExport() {
         height: res.h,
       })
       canvas.toBlob((blob) => {
-        if (blob) downloadBlob('rtl-forge-preview.png', blob)
+        if (blob) downloadBlob('haraf-forge-preview.png', blob)
       }, 'image/png')
     } catch {
       window.alert('Could not generate the PNG in this browser.')
