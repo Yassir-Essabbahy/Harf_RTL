@@ -1,6 +1,6 @@
-import { useRef, useState, type ChangeEvent, type DragEvent } from 'react'
+import { useState } from 'react'
 import { useApp } from '../context/AppContext'
-import { Control, CopyButton } from './ui'
+import { Control, CopyButton, DropZone } from './ui'
 import { analyzeText } from '../utils/rtlCheck'
 
 const TEST_CASES = [
@@ -38,23 +38,8 @@ export function FontLab() {
     uploaded, fontStatus, fontError,
     fontSize,
   } = useApp()
-  const fileRef = useRef<HTMLInputElement>(null)
   const [text, setText] = useState(DEFAULT_PREVIEW)
   const [size, setSize] = useState(37)
-  const [dragOver, setDragOver] = useState(false)
-
-  const onUpload = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) void uploadFont(file)
-    e.target.value = ''
-  }
-
-  const onDrop = (e: DragEvent<HTMLElement>) => {
-    e.preventDefault()
-    setDragOver(false)
-    const file = e.dataTransfer.files?.[0]
-    if (file) void uploadFont(file)
-  }
 
   const cssLines = [
     `font-family: ${active.stack};`,
@@ -75,35 +60,14 @@ export function FontLab() {
           <div className="panel flex flex-col">
             <div className="win-title">Font</div>
             <div className="p-4 flex flex-col gap-3">
-              <div
-                className={`surface p-4 flex flex-col items-center gap-2 text-center ${dragOver ? 'drop-active' : ''}`}
-                onDragOver={(e) => {
-                  e.preventDefault()
-                  setDragOver(true)
-                }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={onDrop}
-              >
-                <span className="mono text-xs text-muted">Drop a font file here</span>
-                <button
-                  type="button"
-                  className="btn btn-primary w-full justify-center"
-                  onClick={() => fileRef.current?.click()}
-                >
-                  ⤒ Upload Font
-                </button>
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept=".ttf,.otf,.woff,.woff2"
-                  className="hidden"
-                  onChange={onUpload}
-                  aria-label="Upload font file"
-                />
-                <div className="text-xs text-muted">
-                  Supported: TTF / OTF / WOFF · stays local
-                </div>
-              </div>
+              <DropZone
+                onFile={(file) => void uploadFont(file)}
+                accept=".ttf,.otf,.woff,.woff2"
+                dropLabel="Drop a font file here"
+                buttonLabel="⤒ Upload Font"
+                hint="Supported: TTF / OTF / WOFF · stays local"
+                ariaLabel="Upload font file"
+              />
 
               {fontStatus === 'loading' && (
                 <div className="text-xs font-semibold" role="status">Loading font…</div>

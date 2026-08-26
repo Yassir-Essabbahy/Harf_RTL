@@ -6,6 +6,7 @@ const TOOLS: { id: TabId; title: string; desc: string }[] = [
   { id: 'text', title: 'RTL Text Lab', desc: 'Test Arabic and RTL text.' },
   { id: 'font', title: 'Font Lab', desc: 'Check how your font handles Arabic.' },
   { id: 'tests', title: 'Arabic Test Suite', desc: 'Run a standardized battery of Arabic rendering tests.' },
+  { id: 'batch', title: 'Batch Mode', desc: 'Test many strings at once from a list, CSV or JSON.' },
   { id: 'pixel', title: 'Pixel Preview', desc: 'See how Arabic looks in a pixel-art style.' },
   { id: 'unity', title: 'Unity Export', desc: 'Take your tested configuration into Unity.' },
 ]

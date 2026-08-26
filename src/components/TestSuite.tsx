@@ -1,99 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useApp } from '../context/AppContext'
-import { SUITE_CASES, type SuiteCase } from '../data/suite'
-import { containsArabic, coverageCheck, fontSpec, inkPixels, shapingProbe } from '../utils/glyphs'
-import { ensureFontsLoaded } from '../utils/canvasText'
-
-type RowStatus = 'pending' | 'pass' | 'warn' | 'fail'
-type SubStatus = 'pass' | 'warn' | 'fail' | 'info'
-
-interface CaseResult {
-  status: RowStatus
-  headline: string
-  details: string[]
-}
-
-const STATUS_LABEL: Record<RowStatus, string> = {
-  pending: '…',
-  pass: '✓ PASS',
-  warn: '⚠ WARNING',
-  fail: '✕ FAIL',
-}
-
-const STATUS_CLASS: Record<RowStatus, string> = {
-  pending: 'text-muted',
-  pass: 'text-ok',
-  warn: 'text-warn',
-  fail: 'text-danger',
-}
-
-function worst(statuses: SubStatus[]): Exclude<RowStatus, 'pending'> {
-  if (statuses.includes('fail')) return 'fail'
-  if (statuses.includes('warn')) return 'warn'
-  return 'pass'
-}
-
-const STATUS_HEADLINE: Record<Exclude<RowStatus, 'pending'>, string> = {
-  pass: 'No problems detected',
-  warn: 'Needs attention',
-  fail: 'Failed to render',
-}
-
-async function runCase(c: SuiteCase, family: string, weight: number): Promise<CaseResult> {
-  const details: string[] = []
-  const statuses: SubStatus[] = []
-
-  /* 1. Rendering: does the browser paint any ink for this string? */
-  const lines = c.text.split('\n')
-  let ink = 0
-  let measurable = true
-  for (const line of lines) {
-    const n = inkPixels(line, family, weight)
-    if (n === null) measurable = false
-    else ink += n
-  }
-  if (!measurable) {
-    statuses.push('warn')
-    details.push('Rendering could not be measured automatically.')
-  } else if (ink === 0) {
-    statuses.push('fail')
-    details.push('Nothing was drawn for this string.')
-  } else {
-    statuses.push('pass')
-    details.push(`Rendered by the browser (${ink} px of ink).`)
-  }
-
-  /* 2. Shaping: contextual forms make joined text narrower than spaced text. */
-  if (c.shaping && containsArabic(c.text)) {
-    const shaped = shapingProbe(family, weight)
-    if (shaped === null) {
-      statuses.push('warn')
-      details.push('Shaping could not be verified automatically.')
-    } else if (shaped) {
-      details.push('Contextual letter forms applied (verified by width comparison).')
-    } else {
-      statuses.push('warn')
-      details.push('Joined letters measured like isolated ones — letters appear disconnected.')
-    }
-  }
-
-  /* 3. Coverage: what the font subsystem reports about glyph availability. */
-  const cov = await coverageCheck(family, weight, c.text)
-  if (cov === null) {
-    statuses.push('info')
-    details.push('Glyph coverage could not be verified automatically.')
-  } else if (cov) {
-    details.push('Font system reports coverage for this string.')
-  } else {
-    statuses.push('warn')
-    details.push('Font may be missing some glyphs — fallback rendering was likely used.')
-  }
-
-  /* Bidi ordering cannot be verified reliably; always recommend a visual check. */
-  details.push('Bidi order and visual quality need a quick human look.')
-
-  return { status: worst(statuses), headline: STATUS_HEADLINE[worst(statuses)], details }
-}
+import { SUITE_CASES } from '../data/suite'
+import {
+  ensureSuiteFonts, runTextChecks, STATUS_CLASS, STATUS_LABEL,
+  type CaseResult, type RowStatus,
+} from '../utils/suite'
 
 export function TestSuite() {
   const { active, uploaded, weight } = useApp()
@@ -104,11 +15,11 @@ export function TestSuite() {
   const runAll = useCallback(async () => {
     const id = ++runIdRef.current
     setRunning(true)
-    setResults(Object.fromEntries(SUITE_CASES.map((c) => [c.id, { status: 'pending' as RowStatus, headline: 'Running…', details: [] }])))
-    await ensureFontsLoaded([`${fontSpec(active.family, weight, 32)}, serif`])
+    setResults(Object.fromEntries(SUITE_CASES.map((c) => [c.id, { status: 'pending' as RowStatus, headline: 'Running…', details: [], checks: [] }])))
+    await ensureSuiteFonts(active.family, weight)
     for (const c of SUITE_CASES) {
       if (runIdRef.current !== id) return
-      const result = await runCase(c, active.family, weight)
+      const result = await runTextChecks(c.text, active.family, weight)
       if (runIdRef.current !== id) return
       setResults((prev) => ({ ...prev, [c.id]: result }))
     }

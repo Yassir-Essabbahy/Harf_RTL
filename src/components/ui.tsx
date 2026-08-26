@@ -1,5 +1,62 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type DragEvent, type ReactNode } from 'react'
 import { copyToClipboard } from '../utils/clipboard'
+
+/* Drag-and-drop + click-to-pick file input, shared by Font Lab and Batch Mode. */
+export function DropZone({
+  onFile,
+  accept,
+  dropLabel,
+  buttonLabel,
+  hint,
+  ariaLabel,
+}: {
+  onFile: (file: File) => void
+  accept: string
+  dropLabel: string
+  buttonLabel: string
+  hint?: string
+  ariaLabel?: string
+}) {
+  const [over, setOver] = useState(false)
+  const ref = useRef<HTMLInputElement>(null)
+
+  const handleDrop = (e: DragEvent<HTMLElement>) => {
+    e.preventDefault()
+    setOver(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file) onFile(file)
+  }
+
+  return (
+    <div
+      className={`surface p-4 flex flex-col items-center gap-2 text-center ${over ? 'drop-active' : ''}`}
+      onDragOver={(e) => {
+        e.preventDefault()
+        setOver(true)
+      }}
+      onDragLeave={() => setOver(false)}
+      onDrop={handleDrop}
+    >
+      <span className="mono text-xs text-muted">{dropLabel}</span>
+      <button type="button" className="btn btn-primary w-full justify-center" onClick={() => ref.current?.click()}>
+        {buttonLabel}
+      </button>
+      <input
+        ref={ref}
+        type="file"
+        accept={accept}
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0]
+          if (file) onFile(file)
+          e.target.value = ''
+        }}
+        aria-label={ariaLabel ?? buttonLabel}
+      />
+      {hint && <div className="text-xs text-muted">{hint}</div>}
+    </div>
+  )
+}
 
 export function Toggle({
   checked,

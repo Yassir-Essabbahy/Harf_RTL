@@ -3,8 +3,6 @@ export interface SuiteCase {
   label: string
   text: string
   category: string
-  /* Whether contextual-form verification makes sense for this string. */
-  shaping?: boolean
 }
 
 export const SUITE_CASES: SuiteCase[] = [
@@ -13,14 +11,12 @@ export const SUITE_CASES: SuiteCase[] = [
     label: 'Basic Arabic',
     category: 'Arabic characters rendered',
     text: 'مرحبا بالعالم',
-    shaping: true,
   },
   {
     id: 'connected',
     label: 'Connected letters',
     category: 'Contextual letter forms applied',
     text: 'مدرسة',
-    shaping: true,
   },
   {
     id: 'long',
@@ -28,7 +24,6 @@ export const SUITE_CASES: SuiteCase[] = [
     category: 'Paragraph renders without errors',
     text:
       'في بداية اللعبة يستيقظ البطل في قرية صغيرة على حافة الصحراء، ويعلمه شيخ القرية أن المملكة تحتاج إلى من يعبر الوادي ويستعيد المفتاح قبل حلول الليل.',
-    shaping: true,
   },
   {
     id: 'diacritics',
@@ -83,6 +78,5 @@ export const SUITE_CASES: SuiteCase[] = [
     label: 'Game dialogue',
     category: 'Multi-line dialogue box',
     text: 'أين كنت؟\nيجب أن نغادر الآن.',
-    shaping: true,
   },
 ]

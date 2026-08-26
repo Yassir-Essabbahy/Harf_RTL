@@ -17,6 +17,8 @@ runs locally in your browser.
 - **Arabic Test Suite** — run a standardized battery of 12 Arabic rendering tests
   (connected letters, diacritics, digits, mixed scripts, parentheses, dialogue…)
   against your current font.
+- **Batch Mode** — test many strings at once: paste `key,text` lines or drop a
+  CSV/JSON file, then sort, filter and export results as JSON/CSV.
 - **Pixel Preview** — preview Arabic text with pixel-style rendering: low
   resolutions (320×180 … 160×90), 1–4× nearest-neighbor scaling, outlines,
   shadows and colors.

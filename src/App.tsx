@@ -4,19 +4,21 @@ import { FontLab } from './components/FontLab'
 import { PixelPreview } from './components/PixelPreview'
 import { UnityExport } from './components/UnityExport'
 import { TestSuite } from './components/TestSuite'
+import { BatchMode } from './components/BatchMode'
 import { Home } from './components/Home'
 import { Help } from './components/Help'
 import { Logo } from './components/Logo'
 import { Segmented } from './components/ui'
 import { AppProvider } from './context/AppContext'
 
-export type TabId = 'home' | 'text' | 'font' | 'tests' | 'pixel' | 'unity' | 'help'
+export type TabId = 'home' | 'text' | 'font' | 'tests' | 'batch' | 'pixel' | 'unity' | 'help'
 
 const TABS: { value: TabId; label: string }[] = [
   { value: 'home', label: 'Home' },
   { value: 'text', label: 'RTL Text Lab' },
   { value: 'font', label: 'Font Lab' },
   { value: 'tests', label: 'Test Suite' },
+  { value: 'batch', label: 'Batch Mode' },
   { value: 'pixel', label: 'Pixel Preview' },
   { value: 'unity', label: 'Unity Export' },
   { value: 'help', label: 'Help' },
@@ -72,6 +74,7 @@ export default function App() {
               {activeTab === 'text' && <TextLab />}
               {activeTab === 'font' && <FontLab />}
               {activeTab === 'tests' && <TestSuite />}
+              {activeTab === 'batch' && <BatchMode />}
               {activeTab === 'pixel' && <PixelPreview />}
               {activeTab === 'unity' && <UnityExport />}
               {activeTab === 'help' && <Help />}
@@ -135,6 +138,15 @@ export default function App() {
                       <p className="mt-2 text-sm text-muted">
                         Uses your current font — no second upload needed. Results only count what can be
                         verified locally in this browser; they are not a guarantee for in-engine quality.
+                      </p>
+                    </div>
+                  ) : activeTab === 'batch' ? (
+                    <div>
+                      <p className="font-bold text-base mb-1">Batch Mode</p>
+                      <p className="font-semibold text-sm">Test many strings at once against your current font.</p>
+                      <p className="mt-2 text-sm text-muted">
+                        Paste key,text lines or drop a CSV/JSON file. Results are sortable and
+                        exportable — using the same local checks as the single-string suite.
                       </p>
                     </div>
                   ) : activeTab === 'pixel' ? (
